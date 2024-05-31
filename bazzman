@@ -1,0 +1,197 @@
+#!/bin/bash
+#
+# Search and play music from terminal. Like chop chop.
+# There is enough fancy shit which we call RAM Diggers
+#
+# Usage:
+# ./bazzman.sh <search term>
+#
+# Example ./bazzman.sh coffee shop noise
+
+SEARCH_COUNT=10
+TMP_FILE_NAME="resp.json"
+LOG_LEVEL="${LOG_LEVEL:-info}"
+
+declare LOLCAT_FOUND
+
+err_whaddafug="incorrect invocation"
+
+function debug() {
+  if [[ "$LOG_LEVEL" == "debug" ]]; then
+    printf "$@"
+    printf "\n"
+  fi
+}
+
+function usage() {
+  echo "Usage: ./bozeman <seach term>"
+}
+
+function rage_quit() {
+  err="$1"
+  msg="$2"
+
+  if [[ -z "$err" ]]; then
+    echo "$err_whaddafug"
+    exit 1
+  fi
+
+  printf "error: %s %s\n" "$err" "$msg"
+  exit 1
+}
+
+function assert_empty() {
+  variablee="$1"
+  value="$2"
+  msg="$3"
+
+  if [[ -z "$variablee" ]]; then
+    echo "$err_whaddafug"
+  fi
+
+  if [[ -z "$value" ]]; then
+    echo "$1 value should not have been empty"
+    [[ -n "$msg" ]] && echo "$msg"
+
+    exit 1
+  fi
+}
+
+err_binary_missing="err_binary_missing"
+
+function check_requirements() {
+  if [[ -z "$(which youtube-dl)" && -z "$(which yt-dl)" && -z "$(which ytdl)" && -z "$(which yt-dlp)" ]]; then
+    rage_quit "$err_binary_missing" "youtube-dl"
+  fi
+
+
+  if [[ -z "$(which jq)" ]]; then
+    rage_quit "$err_binary_missing" "jq"
+  fi
+
+  # hard to imagine, but shit does go wrong
+  if [[ -z "$(which fzf)" ]]; then
+    rage_quit "$err_binary_missing" "fzf"
+  fi
+
+  if [[ -n "$(which lolcat)" ]]; then
+    LOLCAT_FOUND=true
+  fi
+}
+
+err_search_term_empty="err_search_term_empty"
+
+function get_search_results() {
+  search_term="$1"
+  assert_empty "search term" "$search_term" "$err_search_term_empty"
+
+  waiting_msg="Looking for $search_term"
+  if [[ -n "$LOLCAT_FOUND" ]]; then
+    waiting_msg=$(echo "$waiting_msg" | lolcat -f)
+  fi
+  
+  printf "%s" "$waiting_msg"
+
+  yt-dlp \
+    "ytsearch${SEARCH_COUNT}:${search_term}" \
+    --dump-json \
+    --no-playlist \
+    --flat-playlist \
+    --skip-download \
+    --match-filter 'url!*=/shorts/' > "$TMP_FILE_NAME"
+
+  if [[ "$?" -eq 1 ]]; then
+    echo "something went wrong retry"
+    exit 1
+  fi
+}
+
+function render_search_list() {
+  assert_empty "TMP_FILE_NAME" "$TMP_FILE_NAME" "youtube-dl failed to fetch results. try again."
+  search_term="$1"
+
+  entries=""
+
+  while read -r line; do
+    entry=$(echo "$line" | jq -r '[.title, .url] | @csv')
+
+    if [[ -n "$entry" ]]; then
+      entries="${entries} \n ${entry}"
+    fi
+  done < "$TMP_FILE_NAME"
+
+  debug "entries $entries"
+
+  assert_empty "playlist" "$entries" "unable to process results. try again."
+
+  fzf_window_title=" Results for ${search_term} "
+
+  if [[ -n "$LOLCAT_FOUND" ]]; then
+    fzf_window_title=$(echo "$fzf_window_title" | lolcat -f)
+  fi
+
+
+  # https://github.com/catppuccin/fzf
+  # FZF_DEFAULT_OPTS=$FZF_DEFAULT_OPTS" \
+  #   --color=bg+:#ccd0da,bg:#eff1f5,spinner:#dc8a78,hl:#d20f39 \
+  #   --color=fg:#4c4f69,header:#d20f39,info:#8839ef,pointer:#dc8a78 \
+  #   --color=marker:#dc8a78,fg+:#4c4f69,prompt:#8839ef,hl+:#d20f39" \
+    
+  selected=$(printf %b "$entries" | FZF_DEFAULT_OPTS=$FZF_DEFAULT_OPTS fzf --height=50% --border --border-label="╢ $fzf_window_title ╟" --color=label:italic:black)
+  echo "$selected"
+}
+
+function play() {
+  play_item="$1"
+  assert_empty "play item" "$play_item" "couldn't find entry to play. exiting"
+
+  debug "playitem" "$play_item"
+
+  play_item_rev=$(echo "$play_item" | rev)
+
+  url=$(echo "$play_item_rev" | cut -d',' -f1 | rev | tr -d '\"')
+  title=$(echo "$play_item_rev" | cut -d',' -f2- | rev | tr -d '\"')
+
+  playing_msg="Now Playing: $title"
+
+  if [[ -n "$LOLCAT_FOUND" ]]; then
+    playing_msg=$(echo "$playing_msg" | lolcat -f)
+  else 
+    echo 
+  fi
+  
+  mpv --no-video --volume=50 "$url"
+  return "$?"
+}
+
+
+if [[ "$#" -eq 0 ]]; then
+  usage
+  exit 1
+fi
+
+# get_search_results "$@"
+# when mpv quits, re-render the list and wait for input
+# this can be extended to play one by one of whatever
+# 
+
+function loop() {
+  # trap loop 2 6
+
+  debug "$1"
+  selected=$(render_search_list "$1")
+  play "$selected"
+  
+  res="$?"
+  debug "rest $res"
+
+  if [[ "$res" -eq 0 ]]; then
+    loop
+  fi
+}
+
+check_requirements
+
+get_search_results "$*"
+loop "$*"
+
