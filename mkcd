@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
-#
+
+# Check if the directory name is provided
+if [ -z "$1" ]; then
+  echo "Usage: $0 directory/name"
+  exit 1
+fi
+
 mkdir -p "$1"
 cd "$1"

@@ -8,3 +8,4 @@ Gonna be a collection of custom tools. Might contain links to other repos:
 
 - mkcd (a helper to mkdir and cd)
 - bazzman (mpv and fzf based bgm player)
+- man.ly <first argument to man> (view man pages in browser)
