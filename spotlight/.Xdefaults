@@ -1,0 +1,15 @@
+URxvtFuzzy*internalBorder: 30
+URxvtFuzzy*font: \
+		xft:SauceCodePro Nerd Font:style=Regular:antialias=true:size=16:minspace=False, \
+		xft:Noto Sans Mono:antialias=true:size=16:minspace=False, \
+		xft:Monospace:style=Medium:antialias=true:minspace=False
+
+URxvtFuzzy*boldFont: \
+		xft:SauceCodePro Nerd Font:style=Medium:antialias=true:size=16:minspace=False, \
+		xft:Noto Sans Mono:antialias=true:size=16:minspace=False, \
+		xft:Monospace:style=Medium:antialias=true:minspace=False
+
+URxvtFuzzy.scrollBar: false
+URxvtFuzzy*background: [95]#141c21
+URxvtFuzzy*foreground: #93a1a1
+URxvtFuzzy*depth: 32
