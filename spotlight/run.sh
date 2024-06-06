@@ -15,5 +15,6 @@ echo "$cmd_list" | fzf \
     --reverse \
     --header="$header" \
     --bind "ctrl-\:reload(bash ${dir}/runner.sh $dir apps)" \
+    --bind "ctrl-r:reload(bash ${dir}/runner.sh $dir)" \
     --bind "enter:execute(bash ${dir}/runner.sh $dir {})"
 

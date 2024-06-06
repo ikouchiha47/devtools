@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+#
+#
+echo "$@"
+query="$1"
+firefox https://www.google.com/search?q="${query}" &

@@ -38,10 +38,12 @@ shift
 
 input="$@"
 
-if [[ "$input" == "apps"  ]]; then
-    # echo "11" >> "${dir}/loll"
+if [[ "$input" == "apps" ]]; then
     list_apps
+elif [[ "$input" == "google" ]]; then
+    read -p "query: " query
+    bash "${dir}/spotscripts/google" "$query"
+    clear
 else
-    # echo "$input" > "${dir}/loll"
     list_cmds
 fi
