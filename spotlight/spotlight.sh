@@ -3,7 +3,7 @@
 #
 # sudo dnf install rxvt-unicode
 
-running=$(ps aux | grep urxvtd)
+running=$(ps aux | grep urxvtd | grep -v grep)
 if [[ -z "$running" ]]; then
    urxvtd -q -o -f
 fi
