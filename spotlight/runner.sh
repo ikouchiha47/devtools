@@ -1,11 +1,6 @@
 #!/usr/bin/env bash
 #
 #
-# google_search() {
-#     query=$(echo "$1" | sed 's/^g! //')
-#     firefox "https://www.google.com/search?q=${query}" &
-# }
-#
 # calculate() {
 #     expression="${1#calc }"
 #     result=$(echo "$expression" | bc -l)
@@ -38,6 +33,16 @@ shift
 
 input="$@"
 
+run_app() {
+    app="$1"
+    shift
+
+    bash "${dir}/spotscripts/${app}" "$@"
+    echo "$"
+    # clear
+}
+
+
 case "$input" in
     apps)
         list_apps
@@ -45,8 +50,14 @@ case "$input" in
 
     google)
         read -p "query: " query
-        bash "${dir}/spotscripts/google" "$query"
-        clear
+        run_app "google" "$query"
+        ;;
+
+    calculate)
+        read -p "= " expr
+        res=$(echo "$expr" | run_app "calculate")
+        echo "$res"
+        read -r
         ;;
 
     *)
