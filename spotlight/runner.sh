@@ -38,8 +38,6 @@ run_app() {
     shift
 
     bash "${dir}/spotscripts/${app}" "$@"
-    echo "$"
-    # clear
 }
 
 
@@ -50,13 +48,13 @@ case "$input" in
 
     google)
         read -p "query: " query
-        run_app "google" "$query"
+        echo "$query" | run_app "google"
+        read -r
         ;;
 
     calculate)
         read -p "= " expr
-        res=$(echo "$expr" | run_app "calculate")
-        echo "$res"
+        echo "$expr" | run_app "calculate"
         read -r
         ;;
 
