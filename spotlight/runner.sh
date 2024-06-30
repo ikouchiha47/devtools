@@ -58,6 +58,11 @@ case "$input" in
         read -r
         ;;
 
+    hextodec)
+        read -p "= " expr
+        echo "$expr" | run_app "hextodec"
+        read -r
+        ;;
     *)
         list_cmds
         ;;

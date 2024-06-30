@@ -9,6 +9,14 @@ if [[ -z "$running" ]]; then
 fi
 
 d=$(cd `dirname $0` && pwd -P)
-echo "$d"
+urxvt_id="URxvtFuzzy"
 
-urxvtc -name URxvtFuzzy -geometry 80x8+500+500 -e sh -c "$d/run.sh $d"
+
+is_spotlight_on=$(xdotool search --classname "$urxvt_id")
+
+if [[ ! -z "$is_spotlight_on" ]]; then
+   xdotool windowactivate "$is_spotlight_on"
+else
+   urxvtc -name "$urxvt_id" -geometry 80x8+600+500 -e sh -c "$d/run.sh $d"
+fi
+

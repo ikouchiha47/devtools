@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 #
+# simple calculator using linux bc
 #
 calculate() {
     expression="$1"
     result=$(echo "$expression" | bc -l)
-    echo "$result" 
+    echo "$result"
 }
+
 read query
 calculate "$query"
