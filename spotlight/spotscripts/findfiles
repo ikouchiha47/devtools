@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+#
+# find files
+#
+
+run() {
+    query="$1"
+    shift
+
+    selected=$(find "$@" -type f -name "*${query}*" | fzf)
+    file_type=$(file -b --mime-type "$selected")
+
+    allowed_types=("text/plain" "application/pdf" "image/jpeg" "image/png")
+
+    if [[ "${allowed_types[*]}" == *" $file_type "* ]]; then
+        (setsid xdg-open "$selected" >/dev/null 2>&1 &)
+    else
+        echo "$selected"
+    fi
+}
+# echo "$dirs" | tee -a /tmp/log
+
+read query
+if [[ ! -z "$query" ]]; then
+    run "$query" "$@"
+fi

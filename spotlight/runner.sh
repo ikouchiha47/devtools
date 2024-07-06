@@ -63,6 +63,10 @@ case "$input" in
         echo "$expr" | run_app "hextodec"
         read -r
         ;;
+    findfiles)
+        read -p "$> " expr
+        echo "$expr" | run_app "findfiles" ~/Downloads/ ~/Desktop/
+        ;;
     *)
         list_cmds
         ;;

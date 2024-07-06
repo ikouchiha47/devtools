@@ -2,11 +2,11 @@
 #
 # simple calculator using linux bc
 #
-calculate() {
+run() {
     expression="$1"
     result=$(echo "$expression" | bc -l)
     echo "$result"
 }
 
 read query
-calculate "$query"
+run "$query"

@@ -2,11 +2,11 @@
 #
 # hex to decimal
 #
-hex2dec() {
+run() {
     expression="$1"
     result=$(echo "ibase=16; $expression" | bc)
     echo "$result"
 }
 
 read query
-hex2dec "$query"
+run "$query"

@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 #
 #
+run () {
+	query="$@"
+	firefox https://www.google.com/search?q="${query}" &
+}
 read query
 echo "redirect to firefox.."
 
-firefox https://www.google.com/search?q="${query}" &
+run "$query"
