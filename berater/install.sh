@@ -1,7 +1,15 @@
 #!/usr/bin/env bash
 #
-# download url
+# Berater is a silly script to get reviews for company from linekdin jobs listing
+# No fancy selenium, headless, puppermater, and could probably break.
+# Hopefully it doesn't
+# 
+# This is the installer
 #
+# curl 'https://raw.githubusercontent.com/ikouchiha47/devtools/master/berater/install.sh' | bash -s -- -y
+#
+set -e
+
 BASE_URL="https://raw.githubusercontent.com/ikouchiha47/devtools/master/berater"
 
 FILES=("cli.js" "server.js" "sniffratings.js")
@@ -21,8 +29,9 @@ function install() {
 	echo "creating project berater"
 	mkdir -p berater
 
-	for fils in "${FILES[@]}"; do
-		curl "${BASE_URL}/file" -o "berater/${file}"
+	for file in ${FILES[@]}; do
+		echo "file $file"
+		curl "${BASE_URL}/${file}" -o "berater/${file}"
 	done
 
 	echo "project setup done"
@@ -43,6 +52,22 @@ function usage() {
 	echo "cd berater && node cli.js -company 'Cockroach Labs' -sp[google|ddg(default)]"
 }
 
+
+AUTO_CONFIRM=0
+for arg in "$@"
+do
+    case $arg in
+        -y|--yes)
+        AUTO_CONFIRM=1
+        shift 
+        ;;
+    esac
+done
+
 echo "installing at $(pwd)/berater"
 
-yes_or_no && install
+if [[ $AUTO_CONFIRM -eq 1 ]]; then
+    install
+else
+	yes_or_no && install
+fi
