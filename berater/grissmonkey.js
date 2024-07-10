@@ -42,36 +42,98 @@
 		}, 2000)
 	}
 
+	function getNewRater() {
+		let ratingEl = document.createElement("a");
+
+		ratingEl.href = "#";
+		ratingEl.id = "berater_el"
+		ratingEl.innerText = "GetRated"
+		ratingEl.className = "jobs-save-button artdeco-button artdeco-button--secondary artdeco-button--3"
+		ratingEl.style = "margin-left: 10px;";
+
+		ratingEl.onclick = () => {
+			let companyName = $(".job-details-jobs-unified-top-card__company-name a").innerText.trim();
+
+			getCompanyRatings(companyName, SP).then(res => alert(res)).catch(err => alert(err))
+		}
+
+		return ratingEl;
+	}
+
+
+	function debounce(func, delay) {
+		let debounceTimer;
+		delay = delay || 2000
+
+		return function() {
+			const context = this;
+			const args = arguments;
+			clearTimeout(debounceTimer);
+			debounceTimer = setTimeout(() => func.apply(context, args), delay);
+		};
+	};
+
+	const mutator = (elq) => (mutationsList, observer) => {
+		let hasMutated = false;
+
+		//TODO: add a debouncer
+
+		for (const mutation of mutationsList) {
+			if (mutation.type === 'childList' || mutation.type === 'attributes') {
+				// console.log("lala");
+
+				hasMutated = true
+				break;
+			}
+		}
+
+		console.log("mutated?", hasMutated);
+
+		if (!hasMutated) return;
+
+		let element = $(elq);
+		let html = element.innerText;
+		//console.log("html", !html.includes("GetRated"));
+
+		if (hasMutated && !html.includes("GetRated")) {
+			let ratingEl = getNewRater();
+			console.log("appending to ", elq);
+
+
+			element.appendChild(ratingEl);
+		}
+	}
+
+	let watcherQs = [
+		".jobs-details__main-content--single-pane .mt5 div:first-child",
+		".job-details-jobs-unified-top-card__container--two-pane .mt5 div:first-child"
+	]
+
 	//fireup
 	// jobs-details__main-content jobs-details__main-content--single-pane
 	// job-details-jobs-unified-top-card__container--two-pane"
 	//
-	waitTill(() => $(".jobs-details__main-content--single-pane .mt5 div:first-child"),
-		(value) => [value, !!value],
-		(err, element) => {
-			// console.log(element, "eeeee");
+	waitTill(() => watcherQs.slice(0, 1),
+		(values) => [values, values && values.length > 0],
+		(err, elements) => {
 			if (err != null) {
 				return err
 			}
 
-			console.log("creating rater");
+			// console.log("creating rater", elements);
 
-			let ratingEl = document.createElement("a");
+			elements.forEach((element, i) => {
+				if (!element) return;
 
-			ratingEl.href = "#";
-			ratingEl.innerText = "GetRated"
-			ratingEl.className = "jobs-save-button artdeco-button artdeco-button--secondary artdeco-button--3"
-			ratingEl.style = "margin-left: 10px;";
+				// first run
+				let ratingEl = getNewRater();
+				element.appendChild(ratingEl);
 
-			ratingEl.onclick = () => {
-				let companyName = $(".job-details-jobs-unified-top-card__company-name a").innerText.trim();
+				const observer = new MutationObserver(debounce(mutator(watcherQs[i])));
+				const config = { childList: true, attributes: true };
 
-				getCompanyRatings(companyName, SP).then(res => alert(res))
-			}
-
-			console.log(element, element.appendChild)
-
-			element.appendChild(ratingEl);
+				observer.observe(element, config);
+			});
 		});
 
 

@@ -68,7 +68,7 @@ const requestListener = function(req, res) {
 	if (pathname == "/rating") {
 		return handleRatingSearch(company, sp).then(result => {
 			res.writeHead(200);
-			console.log(result);
+			// console.log(result);
 			res.end(JSON.stringify({ success: true, result }));
 		}).catch(err => {
 			res.writeHead(422);
