@@ -30,7 +30,7 @@ const log = {
 
 const searchProviders = (company, searchprovider, url, qbuilder) => {
 	const resolver = (query, provider) => {
-		const searchURL = `${url}=${query.replaceAll(" ", "+")}`;
+		const searchURL = `${url}=${encodeURIComponent(query)}`;
 		let scope = { text: '', provider: '' };
 
 		log.on(searchURL);
@@ -82,7 +82,7 @@ const GoogleResults = {
 	init: function(company) { this._company = company; return this; },
 	rx: /<a href=([^>]+)\/?>/gm,
 	frx: /\/url\?q=([^&]+)/,
-	rrx: /Rating[\s\S]*?(?<rating>(\d\.\d))/gm,
+	rrx: /Rating[\s\S]*?(?<rating>(\d\.\d))/gmi,
 
 	search: function(query) {
 		const destURL = `${this._baseURL}=${encodeURIComponent(query)}`
@@ -130,7 +130,8 @@ const DDGResults = {
 	_baseURL: DDGURL,
 	_buildQ: (company, provider) => `site:${provider} ${company} ratings`,
 
-	rrx: /<a class="result__snippet"[^>]+>[\s\S]*?(?<rating>(\d\.\d))/m,
+	// rrx: /<a class="result__snippet"[^>]+>[\s\S]*?(?<rating>(\d\.\d))/gmi,
+	rrx: /rating<\/b>[\s\S]*?(?<rating>(\d\.\d))/gmi,
 	getReviews: function() {
 		// return Promise.resolve([{ rating: '3.4', provider: 'provider' }]);
 
