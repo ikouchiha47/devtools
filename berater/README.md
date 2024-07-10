@@ -3,7 +3,7 @@
 sniffs rating from ambitionbox and glassdoor
 
 ```
-node cli.js -company NameofCompany [-sp ddg/google]
+node cli.js -company NameofCompany [-search ddg/google]
 ```
 or
 

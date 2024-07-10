@@ -12,7 +12,7 @@ set -e
 
 BASE_URL="https://raw.githubusercontent.com/ikouchiha47/devtools/master/berater"
 
-FILES=("cli.js" "server.js" "sniffratings.js")
+FILES=("cli.js" "server.js" "sniffratings.js" "store.js")
 
 function yes_or_no() {
 	while true; do

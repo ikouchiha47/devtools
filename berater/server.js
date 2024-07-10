@@ -1,7 +1,11 @@
 const http = require('http');
 const url = require('url');
 
-const { GoogleResults, DDGResults } = require('./sniffratings');
+const { GoogleResults, DDGResults, BreachDetector } = require('./sniffratings');
+const Store = require('./store');
+
+
+const store = Store.init("berater", { reviews: [] })
 
 function handleRatingSearch(company, sp) {
 	company = company.trim();
@@ -14,8 +18,34 @@ function handleRatingSearch(company, sp) {
 	} else if (sp == 'ddg') {
 		fetcher = DDGResults.init(company)
 	}
+	let data = store.get('reviews', company)
+	if (data) {
+		// console.log("resolving from disk")
+		return Promise.resolve(data)
+	}
 
-	return fetcher.getReviews();
+	let breacher = BreachDetector.init(fetcher);
+
+	return Promise.allSettled([fetcher.getReviews(), breacher.detect(company)]).
+		then(results => {
+			let [ratingsState, breachedState] = results;
+			let response = { ratings: [], breached: false };
+
+			// console.log(results);
+			if (ratingsState.status === 'fulfilled')
+				response.ratings = ratingsState.value
+
+			if (breachedState.status === 'fulfilled')
+				response.breached = breachedState.value
+
+			// console.log(response);
+
+			store.set('reviews', company, response)
+			return response;
+		});
+
+
+	// return fetcher.getReviews();
 	// Refine google search or google search twice parallely for each
 
 	// Get rating from google search and also try to get rating from website. Combine to average.
@@ -52,6 +82,10 @@ const requestListener = function(req, res) {
 
 const server = http.createServer(requestListener);
 const port = process.env.PORT || 3000;
-server.listen(port, () => {
-	console.log(`Server is running on :${port}`);
-});
+
+store.tryload().then(() => {
+	server.listen(port, () => {
+		console.log(`Server is running on :${port}`);
+	});
+})
+

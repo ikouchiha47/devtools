@@ -84,6 +84,16 @@ const GoogleResults = {
 	frx: /\/url\?q=([^&]+)/,
 	rrx: /Rating[\s\S]*?(?<rating>(\d\.\d))/gm,
 
+	search: function(query) {
+		const destURL = `${this._baseURL}=${encodeURIComponent(query)}`
+
+		return fetch(destURL, { headers: { ...ua } }).then(resp => resp.text()).then(text => {
+			if (text.includes('captcha')) {
+				throw 'blocked'
+			}
+			return text
+		})
+	},
 	getReviews: function() {
 		return searchProviders(this._company, 'google', this._baseURL, this._buildQ).then(results => {
 			return results.map(result => ({
@@ -122,6 +132,8 @@ const DDGResults = {
 
 	rrx: /<a class="result__snippet"[^>]+>[\s\S]*?(?<rating>(\d\.\d))/m,
 	getReviews: function() {
+		// return Promise.resolve([{ rating: '3.4', provider: 'provider' }]);
+
 		return searchProviders(this._company, 'ddg', this._baseURL, this._buildQ).then(results => {
 			return results.map(result => ({
 				rating: findRatingsInSearch(result.text, result.provider, this.rrx),
@@ -131,8 +143,31 @@ const DDGResults = {
 	}
 }
 
+const breachTerms = ["breach", "confirm", "suffer", "hack", "compromise", "incident", "leak", "expose", "attack"];
+
+const BreachDetector = {
+	fetcher: { search: () => Promise.reject('fetecher_not_set') },
+	rxb: (company) => {
+		return new RegExp(`${company}[\\s\\S]{0,50}(?:${breachTerms.join('|')})`, 'gi');
+	},
+	init: function(fetcher) { this.fetcher = fetcher; return this; },
+	detect: function(company) {
+		// return Promise.resolve(true)
+		// let scope = {};
+		let query = encodeURIComponent(`${company} data breaches`);
+		return this.fetcher.search(query, { headers: { ...ua } }).then(html => {
+			const matches = html.match(this.rxb(company))
+			// console.log("breached ", matches);
+			// scope.matches = matches;
+			// return write('tmp/breched', html);
+			return matches && matches.length >= 30;
+		})
+	}
+}
+
 module.exports = {
 	GoogleResults: GoogleResults,
 	BingResults: BingResults,
 	DDGResults: DDGResults,
+	BreachDetector: BreachDetector,
 }

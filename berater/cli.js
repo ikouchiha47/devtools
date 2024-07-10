@@ -1,4 +1,5 @@
-const { GoogleResults, BingResults, DDGResults } = require('./sniffratings');
+const { GoogleResults, BingResults, DDGResults, BreachDetector } = require('./sniffratings');
+const Store = require('./store');
 
 function parseArguments(args) {
 	const argsMap = {};
@@ -19,6 +20,8 @@ function parseArguments(args) {
 	return argsMap;
 }
 
+const store = Store.init("berater", { reviews: [] })
+
 function handleRatingSearch(company, sp) {
 	company = company.trim();
 
@@ -31,10 +34,35 @@ function handleRatingSearch(company, sp) {
 		fetcher = DDGResults.init(company)
 	}
 
-	return fetcher.getReviews();
+	let data = store.get('reviews', company)
+	if (data) {
+		// console.log("resolving from disk")
+		return Promise.resolve(data)
+	}
+
+	let breacher = BreachDetector.init(fetcher);
+
+	return Promise.allSettled([fetcher.getReviews(), breacher.detect(company)]).
+		then(results => {
+			let [ratingsState, breachedState] = results;
+			let response = { ratings: [], breached: false };
+
+			// console.log(results);
+			if (ratingsState.status === 'fulfilled')
+				response.ratings = ratingsState.value
+
+			if (breachedState.status === 'fulfilled')
+				response.breached = breachedState.value
+
+			// console.log(response);
+
+			store.set('reviews', company, response)
+			return response;
+		});
 }
 
 async function main() {
+	await store.tryload();
 	const argsMap = parseArguments(process.argv);
 
 	if (!argsMap.company) {
@@ -48,9 +76,12 @@ async function main() {
 	try {
 		const ratings = await handleRatingSearch(company, sp);
 		console.log(`Ratings for ${company}:`, ratings);
+		await store.flush();
+		store.stop();
 	} catch (error) {
 		console.error('Error retrieving ratings:', error);
 	}
+
 }
 
-main()
+main().then(() => { process.exit(0) });
