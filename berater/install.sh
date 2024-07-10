@@ -12,7 +12,7 @@ set -e
 
 BASE_URL="https://raw.githubusercontent.com/ikouchiha47/devtools/master/berater"
 
-FILES=("cli.js" "server.js" "sniffratings.js" "store.js")
+FILES=("cli.js" "server.js" "sniffratings.js" "store.js" "grissmokey.js")
 
 function yes_or_no() {
 	while true; do
@@ -28,6 +28,7 @@ function yes_or_no() {
 function install() {
 	echo "creating project berater"
 	mkdir -p berater
+	mkdir -p berater/tmp
 
 	for file in ${FILES[@]}; do
 		echo "file $file"
