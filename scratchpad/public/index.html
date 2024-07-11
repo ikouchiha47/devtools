@@ -34,7 +34,16 @@
 			</div>
 
 
-			<textarea class="hidden" id="scratchpad"></textarea>
+			<dialog id="textInputDialog" class="hidden">
+			<form method="dialog">
+				<textarea id="scratchpad" rows="10" cols="70"></textarea>
+				<div class="dialog-buttons">
+					<button type="submit" value="cancel"  style="background-color: var(--main-bg)">Cancel</button>
+					<button type="submit" value="confirm" style="background-color: var(--header);">Add Text</button>
+				</div>
+			</form>
+			</dialog>
+			<!-- <textarea class="hidden" id="scratchpad"></textarea> -->
 			<div id="status"></div>
 
 			<section class="devices-info">

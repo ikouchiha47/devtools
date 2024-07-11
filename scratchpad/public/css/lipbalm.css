@@ -131,11 +131,6 @@ h1::after {
   color: var(--accent-1);
 }
 
-#scratchpad {
-  width: 40%;
-  height: 50px;
-}
-
 #imageUpload {
   color: transparent;
 }

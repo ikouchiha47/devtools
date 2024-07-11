@@ -1,4 +1,12 @@
 (function() {
+	function $(el, ctx) {
+		return document.querySelector(el)
+	}
+
+	function $$(el, ctx) {
+		return document.querySelectorAll(el)
+	}
+
 	let selectedObject = null;
 	let canvas = null;
 	let lastLeft = 50;
@@ -11,14 +19,6 @@
 	}
 
 	let currentTheme = localStorage.getItem('_scratchpad_theme_') || 'bright';
-
-	function $(el, ctx) {
-		return document.querySelector(el)
-	}
-
-	function $$(el, ctx) {
-		return document.querySelectorAll(el)
-	}
 
 	function adjustCanvasSize(newItem) {
 		let canvasWidth = canvas.getWidth();
@@ -241,12 +241,16 @@
 		const status = $('#status');
 		const addText = $("#addText")
 		const imgUpload = $("#imageUpload")
+		const textInputDialog = $("#textInputDialog");
 
 		addText.addEventListener('click', () => {
-			if (scratchpad.classList.contains('hidden')) {
-				scratchpad.classList.remove('hidden')
+			console.log(scratchpad.classList);
+
+			if (textInputDialog.classList.contains('hidden')) {
+				textInputDialog.classList.remove('hidden')
+				textInputDialog.showModal();
 			} else {
-				scratchpad.classList.add('hidden')
+				textInputDialog.classList.add('hidden')
 			}
 		})
 
@@ -279,16 +283,32 @@
 			status.textContent = 'Content updated';
 		});
 
-		scratchpad.addEventListener('blur', () => {
-			status.textContent = 'Saving...';
-			let args = ['text', scratchpad.value, lastLeft, lastTop]
-			createItem.apply(null, args);
+		textInputDialog.addEventListener('close', () => {
+			if (textInputDialog.returnValue === 'confirm') {
+				const text = scratchpad.value.trim();
+				if (text) {
+					let args = ['text', text, lastLeft, lastTop];
+					createItem.apply(null, args);
+					socket.emit('updateScratchpad', makeItemForTransport.apply(null, args));
+					status.textContent = 'Text added';
 
-			socket.emit('updateScratchpad', makeItemForTransport.apply(null, args));
+				}
+			}
 
-			status.textContent = 'All changes saved';
-			scratchpad.value = '';
+			textInputDialog.classList.add('hidden')
+			scratchpad.value = ''; // Clear the input
 		});
+
+		// scratchpad.addEventListener('blur', () => {
+		// 	status.textContent = 'Saving...';
+		// 	let args = ['text', scratchpad.value, lastLeft, lastTop]
+		// 	createItem.apply(null, args);
+		//
+		// 	socket.emit('updateScratchpad', makeItemForTransport.apply(null, args));
+		//
+		// 	status.textContent = 'All changes saved';
+		// 	scratchpad.value = '';
+		// });
 
 		// Fetch the initial list of devices
 		// Give it a second for the server to register
