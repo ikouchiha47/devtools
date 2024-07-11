@@ -5,35 +5,56 @@ const crypto = require('node:crypto');
 const fs = require('node:fs/promises');
 //
 const Mutex = {
-	_waitqueue: [],
-	_islocked: false,
+	_locked: false,
+	_waitQueue: [],
+	cancelError: new Error("Mutex operation canceled"),
 
-	lock: function() {
-		const that = this;
+	lock: function(priority = 0) {
 		return new Promise((resolve, reject) => {
-			const locker = () => {
-				if (!that._islocked) {
-					that._islocked = true
-					resolve();
-				} else {
-					// console.log("pushing to queue")
-					that._waitqueue.push(locker)
-				}
+			if (!this._locked) {
+				this._locked = true;
+				resolve();
+			} else {
+				const task = { resolve, reject, priority };
+				const i = this.findIndexFromEnd(this._waitQueue, (other) => priority <= other.priority);
+				this._waitQueue.splice(i + 1, 0, task);
 			}
+		});
+	},
 
-			locker();
-		})
-	},
 	unlock: function() {
-		// console.log("unlocking ", this._waitqueue.length)
-		if (this._waitqueue.length > 0) {
-			let reliver = this._waitqueue.shift()
-			reliver()
-		} else {
-			this._islocked = false
+		if (!this._locked) {
+			throw new Error("Mutex is not locked");
 		}
-		// console.log("locked?", this._islocked);
+		this._locked = false;
+		this._dispatch();
 	},
+
+	isLocked: function() {
+		return this._locked;
+	},
+
+	cancel: function() {
+		this._waitQueue.forEach((entry) => entry.reject(this._cancelError));
+		this._waitQueue = [];
+	},
+
+	_dispatch: function() {
+		if (this._waitQueue.length > 0) {
+			const nextTask = this._waitQueue.shift();
+			this._locked = true;
+			nextTask.resolve();
+		}
+	},
+
+	findIndexFromEnd: function(a, predicate) {
+		for (let i = a.length - 1; i >= 0; i--) {
+			if (predicate(a[i])) {
+				return i;
+			}
+		}
+		return -1;
+	}
 }
 
 // not much concurrncy going on here
@@ -56,6 +77,7 @@ const Store = {
 
 		this._store = name;
 		this._snapperId = this.snapshot();
+		this._mutex = Object.create(Mutex);
 		return this;
 	},
 
