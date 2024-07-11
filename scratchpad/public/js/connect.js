@@ -12,9 +12,10 @@
 
 	function initCanvas() {
 		canvas = new fabric.Canvas('canvas', {
-			width: window.innerWidth * 0.7,
-			height: window.innerHeight * 0.7,
+			width: window.innerWidth * 0.8,
+			height: window.innerHeight * 0.65,
 			backgroundColor: '#f0f0f0',
+			enablePointerEvents: true,
 		});
 
 		canvas.on('selection:created', (e) => {
@@ -23,6 +24,27 @@
 
 		canvas.on('selection:cleared', () => {
 			selectedObject = null;
+		});
+
+		let longPressTimer;
+		let isCopying = false;
+
+		canvas.on('mouse:down', (e) => {
+			// console.log(e.target.type == 'i-text', "tits");
+			if (e.target && e.target.type == 'i-text') {
+				longPressTimer = setTimeout(() => {
+					isCopying = true;
+					copyTextToClipboard(e.target.text);
+					alert('Text copied!');
+				}, 1000);
+			}
+		});
+
+		canvas.on('mouse:up', () => {
+			clearTimeout(longPressTimer);
+			setTimeout(() => {
+				isCopying = false;
+			}, 100);
 		});
 	}
 
@@ -47,9 +69,10 @@
 			fabricObject = new fabric.IText(content, {
 				left: left,
 				top: top,
-				fontSize: 20,
+				fontSize: 22,
 				fill: '#000000',
 				fontFamily: 'Quicksand',
+				hasControls: false,
 			});
 		} else if (type === 'image') {
 			fabric.Image.fromURL(content, (img) => {

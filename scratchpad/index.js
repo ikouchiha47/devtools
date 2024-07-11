@@ -45,9 +45,9 @@ bonjour.find({ type: 'http' }, (service) => {
 	io.emit('newDevice', service);
 });
 
-setInterval(() => {
-	console.log(scratchpadContents);
-}, 2000)
+// setInterval(() => {
+// 	console.log(scratchpadContents);
+// }, 2000)
 
 io.on('connection', (socket) => {
 	console.log('New client connected', socket.id);
