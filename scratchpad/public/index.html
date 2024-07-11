@@ -14,10 +14,15 @@
 	<body>
 		<div id="toolbar">
 			<!-- Add buttons for text, image upload, and custom tools here -->
+			<input type="checkbox" id="menu-toggle" class="hidden">
+			<label for="menu-toggle" class="menu-icon">☰</label>
+
+			<div class="toolbar-content">
 			<button id="addText">Add Text</button>
 			<input type="file" id="imageUpload" accept="image/*">
 			<button id="customTool1">Custom Tool 1</button>
 			<button id="customTool2">Custom Tool 2</button>
+			</div>
 		</div>
 
 		<div class="content-wrapper">

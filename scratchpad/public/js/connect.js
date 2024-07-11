@@ -38,12 +38,19 @@
 		canvas.renderAll();
 	}
 
+	// get distance between two fingers
+	function getDistance(touch1, touch2) {
+		const dx = touch1.clientX - touch2.clientX;
+		const dy = touch1.clientY - touch2.clientY;
+		return Math.sqrt(dx * dx + dy * dy);
+	}
+
 	function initCanvas() {
 		canvas = new fabric.Canvas('canvas', {
 			width: window.innerWidth * 0.8,
 			height: window.innerHeight * 0.65,
 			backgroundColor: themes[currentTheme].bgColor,
-			enablePointerEvents: true,
+			// enablePointerEvents: true,
 		});
 
 		canvas.on('selection:created', (e) => {
@@ -96,17 +103,6 @@
 		let lastPosX = 0;
 		let lastPosY = 0;
 
-		// canvas.on('mouse:down', (opt) => {
-		// 	let evt = opt.e;
-		// 	if (evt.altKey === true) {
-		// 		isPanning = true;
-		// 		lastPosX = evt.clientX;
-		// 		lastPosY = evt.clientY;
-		// 	}
-		//
-		// 	adjustCanvasSize(fabricObject)
-		// });
-
 		canvas.on('mouse:move', (opt) => {
 			if (isPanning) {
 				let e = opt.e;
@@ -119,7 +115,53 @@
 			}
 		});
 
-		canvas.on('mouse:up', () => {
+		canvas.wrapperEl.addEventListener('wheel', (opt) => {
+			let delta = opt.deltaY;
+			let zoom = canvas.getZoom();
+			zoom = zoom + delta / 200;
+			if (zoom > 3) zoom = 3;
+			if (zoom < 0.5) zoom = 0.5;
+			canvas.zoomToPoint({ x: opt.offsetX, y: opt.offsetY }, zoom);
+			opt.preventDefault();
+			opt.stopPropagation();
+		});
+
+		let lastDistance = 0;
+
+		canvas.wrapperEl.addEventListener('touchstart', (e) => {
+			if (e.touches.length === 2) {
+				lastDistance = getDistance(e.touches[0], e.touches[1]);
+			}
+		});
+
+		canvas.wrapperEl.addEventListener('touchmove', (e) => {
+			if (e.touches.length === 2) {
+				const distance = getDistance(e.touches[0], e.touches[1]);
+				// if delta < 0, fingers are moving towards, lastDistance > nowDistance
+				// if distance increases, delta > 0
+
+				const delta = distance - lastDistance;
+				let zoom = canvas.getZoom();
+				zoom = zoom * (1 + delta / 200);
+				if (zoom > 3) zoom = 3;
+				if (zoom < 0.5) zoom = 0.5;
+
+				// midpoint of two fingers
+				const center = {
+					x: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+					y: (e.touches[0].clientY + e.touches[1].clientY) / 2
+				};
+
+				const canvasOffset = canvas.wrapperEl.getBoundingClientRect();
+				const zoomPoint = {
+					x: center.x - canvasOffset.left,
+					y: center.y - canvasOffset.top
+				};
+
+				canvas.zoomToPoint(new fabric.Point(zoomPoint.x, zoomPoint.y), zoom);
+				lastDistance = distance;
+				e.preventDefault();
+			}
 		});
 	}
 
@@ -152,7 +194,7 @@
 				fontSize: 22,
 				fill: themes[currentTheme].fgColor,
 				fontFamily: 'Quicksand',
-				hasControls: true,
+				hasControls: false,
 			});
 
 			// console.log("wh", fabricObject.width, fabricObject.height);

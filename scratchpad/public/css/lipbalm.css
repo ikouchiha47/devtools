@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap');
 
 :root {
   --main-bg: rgb(249, 245, 242);
@@ -12,7 +13,7 @@
 body {
   margin: 0;
   padding: 0;
-  font-family: 'Roboto Mono', monospace;
+  font-family: 'Space Mono', monospace;
   font-size: 16px;
   background-color: var(--main-bg);
   color: var(--text-primary);
@@ -24,13 +25,27 @@ body {
   top: 0;
   left: 0;
   right: 0;
-  padding: 20px;
   background-color: var(--header);
+  z-index: 1000;
+  border-bottom: 5px solid black;
+}
+
+#menu-toggle {
+  display: none;
+}
+
+.menu-icon {
+  display: none;
+  cursor: pointer;
+  padding: 10px;
+  font-size: 1.5rem;
+}
+
+.toolbar-content {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  z-index: 1000;
-  border-bottom: 5px solid black;
+  padding: 20px;
 }
 
 button, input[type="file"] {
@@ -57,10 +72,6 @@ button::after, input[type="file"]::after {
   background-color: var(--black);
   transform: scaleX(0);
   transition: transform 0.3s;
-}
-
-button:hover, input[type="file"]:hover {
-  /* color: var(--accent-1); */
 }
 
 button:hover::after, input[type="file"]:hover::after {
@@ -140,7 +151,7 @@ h1::after {
 #device-list li {
   padding: 2px 5px;
   color: blue;
-  font-family: 'Quicksand', sans-serif;
+  font-family: 'Roboto Mono', sans-serif;
 }
 
 .hidden {
@@ -150,7 +161,7 @@ h1::after {
 .canvas-wrapper {
   position: relative;
   width: max-content;
-  max-width: 100%;
+  min-width: 100%;
   border: 1px solid var(--black);
   box-shadow: 8px 8px var(--black);
   margin-bottom: 20px;
@@ -170,13 +181,24 @@ h1::after {
 }
 
 @media (max-width: 768px) {
-  #toolbar {
+  .menu-icon {
+    display: block;
+  }
+
+  .toolbar-content {
+    display: none;
     flex-direction: column;
     align-items: flex-start;
+    padding: 10px;
+  }
+
+  #menu-toggle:checked + .menu-icon + .toolbar-content {
+    display: flex;
   }
 
   button, input[type="file"] {
     margin-bottom: 10px;
+    width: 100%;
   }
 
   h1 {
