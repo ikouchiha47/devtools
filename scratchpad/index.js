@@ -9,7 +9,7 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server);
 
-let scratchpadContent = '';
+let scratchpadContents = [];
 
 // discovered by mdns
 let peers = new Map();
@@ -33,7 +33,7 @@ app.get('/devices', (req, res) => {
 });
 
 app.get('/scratchpad', (req, res) => {
-	res.json({ content: scratchpadContent });
+	res.json({ content: scratchpadContents });
 });
 
 bonjour.find({ type: 'http' }, (service) => {
@@ -41,8 +41,13 @@ bonjour.find({ type: 'http' }, (service) => {
 		peers.set(service.name, new Set());
 	}
 
+	// get the other devices form the api?
 	io.emit('newDevice', service);
 });
+
+setInterval(() => {
+	console.log(scratchpadContents);
+}, 2000)
 
 io.on('connection', (socket) => {
 	console.log('New client connected', socket.id);
@@ -50,11 +55,15 @@ io.on('connection', (socket) => {
 
 	io.emit('updateDevices', Array.from(devices));
 
-	socket.emit('updateScratchpad', scratchpadContent);
+	// console.log(scratchpadContents);
+	socket.emit('updateScratchpad', scratchpadContents);
 
 	socket.on('updateScratchpad', (content) => {
-		scratchpadContent = content;
-		io.emit('updateScratchpad', scratchpadContent);
+		// validate types
+		scratchpadContents.push(content);
+		// make sure not to send the update to the
+		// producer of the content
+		io.emit('updateScratchpad', content);
 	});
 
 	// Handle client disconnection
