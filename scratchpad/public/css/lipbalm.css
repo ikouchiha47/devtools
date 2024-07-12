@@ -89,6 +89,7 @@ button:hover::after, input[type="file"]:hover::after {
   display: flex;
   flex-direction: column;
   align-items: center;
+  margin-top: 100px;
   /* max-width: 1200px; */
   /* margin: 0 auto; */
 }
@@ -156,11 +157,11 @@ h1::after {
 .canvas-wrapper {
   position: relative;
   width: max-content;
-  min-width: 100%;
+  max-width: 90%;
   border: 1px solid var(--black);
   box-shadow: 8px 8px var(--black);
   margin-bottom: 20px;
-  /* overflow: hidden; */
+  overflow: hidden;
 }
 
 .canvas-wrapper canvas {
@@ -180,6 +181,10 @@ h1::after {
     display: block;
   }
 
+  .content-wrapper {
+    margin-top: 50px;
+  }
+
   .toolbar-content {
     display: none;
     flex-direction: column;
@@ -189,6 +194,11 @@ h1::after {
 
   #menu-toggle:checked + .menu-icon + .toolbar-content {
     display: flex;
+  }
+
+
+  #device-list {
+    flex-direction: column;
   }
 
   button, input[type="file"] {

@@ -19,6 +19,13 @@
 	}
 
 	let currentTheme = localStorage.getItem('_scratchpad_theme_') || 'bright';
+	let isDragging = false;
+	let dragStartX, dragStartY;
+	const dragThreshold = 5;
+	let isPanning = false;
+	let lastPosX = 0;
+	let lastPosY = 0;
+
 
 	function adjustCanvasSize(newItem) {
 		let canvasWidth = canvas.getWidth();
@@ -64,28 +71,69 @@
 			// console.log(e.target.type == 'i-text', "tits");
 			if (e.target && e.target.type == 'i-text') {
 				longPressTimer = setTimeout(() => {
-					isCopying = true;
+					isCopying = true && !isDragging;
+					console.log("drag, copy", isDragging, isCopying);
+
 					copyTextToClipboard(e.target.text);
 					alert('Text copied!');
 				}, 1000);
 			}
 
-			let evt = e.e;
-			if (evt.altKey === true) {
-				isPanning = true;
-				lastPosX = evt.clientX;
-				lastPosY = evt.clientY;
-			}
+			isDragging = true;
 
+			let evt = e.e;
+			isPanning = evt.altKey === true;
+
+			lastPosX = evt.clientX;
+			lastPosY = evt.clientY;
+			dragStartX = lastPosX;
+			dragStartY = lastPosY;
+
+			// console.log(selectedObject, "sc");
 			adjustCanvasSize(selectedObject)
 		});
 
 		canvas.on('mouse:up', () => {
 			isPanning = false;
+			isDragging = false;
+
+			canvas.selection = true;
+
 			clearTimeout(longPressTimer);
 			setTimeout(() => {
 				isCopying = false;
 			}, 100);
+		});
+
+		canvas.on('mouse:move', (opt) => {
+			// console.log(opt.target, isDragging, "target");
+			let e = opt.e;
+
+			if (isPanning) {
+				let vpt = canvas.viewportTransform;
+				vpt[4] += e.clientX - lastPosX;
+				vpt[5] += e.clientY - lastPosY;
+				canvas.requestRenderAll();
+				lastPosX = e.clientX;
+				lastPosY = e.clientY;
+				return;
+			}
+
+			// Only on desktop
+			// TODO merge this with touchmove
+			if (isDragging && !opt.target && !e.touches) {
+				let vpt = canvas.viewportTransform;
+				// console.log("b4r", vpt, lastPosY, lastPosX, e.clientX, e.clientY);
+				vpt[4] += e.clientX - lastPosX;
+				vpt[5] += e.clientY - lastPosY;
+
+				// console.log("a8r", vpt)
+				canvas.requestRenderAll();
+				lastPosX = e.clientX;
+				lastPosY = e.clientY;
+			} else if (isDragging && opt.target) {
+				isDragging = false;
+			}
 		});
 
 		canvas.on('mouse:wheel', (opt) => {
@@ -99,43 +147,38 @@
 			opt.e.stopPropagation();
 		});
 
-		let isPanning = false;
-		let lastPosX = 0;
-		let lastPosY = 0;
-
-		canvas.on('mouse:move', (opt) => {
-			if (isPanning) {
-				let e = opt.e;
-				let vpt = canvas.viewportTransform;
-				vpt[4] += e.clientX - lastPosX;
-				vpt[5] += e.clientY - lastPosY;
-				canvas.requestRenderAll();
-				lastPosX = e.clientX;
-				lastPosY = e.clientY;
-			}
-		});
-
-		canvas.wrapperEl.addEventListener('wheel', (opt) => {
-			let delta = opt.deltaY;
-			let zoom = canvas.getZoom();
-			zoom = zoom + delta / 200;
-			if (zoom > 3) zoom = 3;
-			if (zoom < 0.5) zoom = 0.5;
-			canvas.zoomToPoint({ x: opt.offsetX, y: opt.offsetY }, zoom);
-			opt.preventDefault();
-			opt.stopPropagation();
-		});
 
 		let lastDistance = 0;
 
 		canvas.wrapperEl.addEventListener('touchstart', (e) => {
-			if (e.touches.length === 2) {
+			if (e.touches.length === 1) {
+				isDragging = true;
+				lastPosX = e.touches[0].clientX;
+				lastPosY = e.touches[0].clientY;
+			} else if (e.touches.length === 2) {
+				isDragging = false
 				lastDistance = getDistance(e.touches[0], e.touches[1]);
 			}
 		});
 
+		canvas.wrapperEl.addEventListener('touchend', (e) => {
+			isDragging = false;
+			isPanning = false;
+		});
+
+		// Todo: unify this with mouse:move
 		canvas.wrapperEl.addEventListener('touchmove', (e) => {
-			if (e.touches.length === 2) {
+			if (isDragging && e.touches.length === 1) {
+
+				let touch = e.touches[0];
+				let vpt = canvas.viewportTransform;
+				vpt[4] += touch.clientX - lastPosX;
+				vpt[5] += touch.clientY - lastPosY;
+				canvas.requestRenderAll();
+				lastPosX = touch.clientX;
+				lastPosY = touch.clientY;
+				e.preventDefault();
+			} else if (e.touches.length === 2) {
 				const distance = getDistance(e.touches[0], e.touches[1]);
 				// if delta < 0, fingers are moving towards, lastDistance > nowDistance
 				// if distance increases, delta > 0
@@ -244,8 +287,6 @@
 		const textInputDialog = $("#textInputDialog");
 
 		addText.addEventListener('click', () => {
-			console.log(scratchpad.classList);
-
 			if (textInputDialog.classList.contains('hidden')) {
 				textInputDialog.classList.remove('hidden')
 				textInputDialog.showModal();
