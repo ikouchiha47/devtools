@@ -11,3 +11,6 @@ run: setup
 
 cleanup:
 	pm2 delete berater
+
+restart:
+	pm2 restart scratchpad && pm2 logs scratchpad

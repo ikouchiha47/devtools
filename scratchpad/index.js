@@ -79,11 +79,38 @@ const FishtownHookers = {
 		return this;
 	},
 
+	initiateShip: function() {
+		console.log("intiateShip")
+
+		return { stage: 'init_auth', id: this.__socket.id }
+	},
+
+	validateAuth: function(response) {
+		// console.log(({}).toString.call(null, this), this.__socket.id);
+		try {
+			console.log("validateAuth");
+
+			let [isAuth, tokenObj] = auth.authorize(response.userName, response.authToken)
+			if (tokenObj.id != this.__socket.id) {
+				console.log("rehydrate", response.userName);
+
+				console.log("debug", auth.debug())
+				auth.rehydrate(tokenObj.id, this.__socket.id, response.userName);
+			}
+			let user = auth.find(this.__socket.id);
+
+			sendVerificationEvent(this.__socket, user);
+		} catch (e) {
+			console.warn("fffailed to authorize ", e)
+			this.__socket.emit('newConnection', this.openPortal());
+		}
+	},
+
 	openPortal: function() {
 		try {
-			console.log(this.__socket.id, "socketid");
-
+			console.log("openPortal")
 			let res = auth.init(this.__socket.id)
+
 			console.log("auth code: ", res.authCode);
 
 			return { stage: 'auth_pending' }
@@ -95,11 +122,13 @@ const FishtownHookers = {
 
 	handleIdentity: function(response, onComplete, onError) {
 		try {
-			let { authCode } = response;
-			auth.verify(this.__socket.id, authCode);
 
-			console.log("user verified");
-			onComplete(this.__socket, authCode)
+			console.log("handleIdentity");
+
+			let { authCode } = response;
+			let user = auth.verify(this.__socket.id, authCode);
+
+			onComplete(this.__socket, user);
 
 		} catch (e) {
 			if (e.message == 'dead') {
@@ -107,43 +136,49 @@ const FishtownHookers = {
 				onError(this.__socket, { error: 'fuck_off' })
 			}
 
+			console.error("identity failed", e)
 			console.warn('too many people on boat')
+
 			onError(this.__socket, { error: 'overcrowded' })
 		}
 	},
 }
 
+
+const sendVerificationEvent = (sock, userData) => {
+	console.log("sendVerification");
+
+	let response = { data: removeObjAttribute(userData, 'authCode') }
+
+	// console.log(scractes.all(), response, userData, "stuff");
+
+	sock.emit('comeIn', response);
+	sock.emit('flushAll', scractes.all());
+	sock.broadcast.emit('dingDing', response);
+}
+
+const sendError = (sock, error) => {
+	sock.emit('error', { error: error })
+}
+
 io.on('connection', (socket) => {
 	console.log('New client connected', socket.id);
-	// devices.add(socket.id);
 
-	// lifecycle = FishtownHookers.init(socket)
-	// lifecycle.openPortal('new_connection')
-	// lifecycle.handleVerification('knock_knock', response, onComplete, onError)
-	// lifecycle.addStuff('add_item')
-	// lifecycle.handleDeregister('')
+	const fo = Object.create(FishtownHookers)
 
-	const lifecycle = FishtownHookers.init(socket);
-
-	const sendVerificationEvent = (sock, userData) => {
-		let response = { data: removeObjAttribute(userData, 'authCode') }
-
-		console.log(scractes.all(), "stuff");
-
-		sock.emit('comeIn', response);
-		sock.emit('flushAll', scractes.all());
-		sock.broadcast.emit('dingDing', response);
-	}
-
-	const sendError = (sock, error) => {
-		sock.emit('error', { error: error })
-	}
+	const lifecycle = fo.init(socket);
 
 	//openPortal
-	socket.emit('newConnection', lifecycle.openPortal());
+	// socket.emit('newConnection', lifecycle.checkAuthenticated());
+	// socket.emit('newConnection', lifecycle.openPortal());
+
+	socket.emit('initiateShip', lifecycle.initiateShip())
+	socket.on('validateAuth', lifecycle.validateAuth.bind(lifecycle))
 
 	// handleIdentity
 	socket.on('knockKnock', (response) => {
+		console.log("knockKnock", response.id, socket.id);
+
 		lifecycle.handleIdentity(response, sendVerificationEvent, sendError)
 	});
 

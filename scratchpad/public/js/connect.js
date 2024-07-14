@@ -323,6 +323,15 @@
 			}
 		})
 
+		socket.on('initiateShip', (result) => {
+			if (result.stage == 'init_auth') {
+				let userName = localStorage.getItem('userName') || '';
+				let authToken = localStorage.getItem('authToken') || '';
+
+				socket.emit('validateAuth', { id: result.id, userName, authToken })
+			}
+		});
+
 		socket.on('newConnection', (result) => {
 			// console.log(result);
 			if ('stage' in result && result.stage == 'auth_pending') {
@@ -337,6 +346,12 @@
 
 		socket.on('flushAll', (devices) => {
 			renderDevices(devices);
+		})
+
+		socket.on('comeIn', (response) => {
+			console.log(response.data)
+			localStorage.setItem('userName', response.data.userName);
+			localStorage.setItem('authToken', response.data.authToken)
 		})
 
 		// socket.on('updateDevices', (devices) => {
