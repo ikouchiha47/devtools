@@ -2,7 +2,7 @@ let store = {};
 
 let ScratchTypes = {
 	text: true,
-	img: true,
+	image: true,
 }
 
 const ScratchPad = {

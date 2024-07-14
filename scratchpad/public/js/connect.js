@@ -223,11 +223,12 @@
 		deviceList.appendChild(li);
 	}
 
-	function makeItemForTransport(type, content, left, top) {
-		return { type, content, left, top }
+	function makeItemForTransport(id, type, content, left, top) {
+		return { id: id, content: { type, content, left, top } }
 	}
+
 	function fromItemForTransport(data) {
-		return [data.type, data.content, data.left, data.top];
+		return [data.id, data.type, data.content, data.left, data.top];
 	}
 
 	function toss(options) {
@@ -299,15 +300,16 @@
 
 		authCode.addEventListener('input', (e) => {
 			let value = e.target.value;
-			console.log(value, value.length);
 
 			if (value.length == 6) {
 				socket.emit('knockKnock', ({ id: socket.id, authCode: value }))
 
+				// TODO: do this after user verified
 				if (!authUserDialog.classList.contains('hidden')) {
 					authUserDialog.close();
 					authUserDialog.classList.add('hidden');
 				}
+
 				e.target.value = '';
 			}
 		})
@@ -322,8 +324,7 @@
 		})
 
 		socket.on('newConnection', (result) => {
-			console.log(result);
-
+			// console.log(result);
 			if ('stage' in result && result.stage == 'auth_pending') {
 				authUserDialog.classList.remove('hidden');
 				authUserDialog.showModal();
@@ -373,7 +374,10 @@
 				if (text) {
 					let args = ['text', text, lastLeft, lastTop];
 					createItem.apply(null, args);
-					socket.emit('updateScratchpad', makeItemForTransport.apply(null, args));
+
+					console.log("socketid", socket.id);
+
+					socket.emit('updateScratchpad', makeItemForTransport.apply(null, [socket.id, ...args]));
 					status.textContent = 'Text added';
 
 				}

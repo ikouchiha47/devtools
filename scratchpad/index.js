@@ -154,8 +154,10 @@ io.on('connection', (socket) => {
 
 	socket.on('updateScratchpad', ({ id, content }) => {
 		try {
+			//TODO: validate id with socket.id
+			console.log("id matchers", id, socket.id);
 
-			let isAuthzed = auth.isAuthz(id)
+			let isAuthzed = auth.isAuthz(socket.id)
 			if (!isAuthzed) return { error: 'unauthorized' }
 
 			scractes.create(id, content)
