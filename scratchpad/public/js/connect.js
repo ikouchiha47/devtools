@@ -21,7 +21,7 @@
 	let currentTheme = localStorage.getItem('_scratchpad_theme_') || 'bright';
 	let isDragging = false;
 	let dragStartX, dragStartY;
-	const dragThreshold = 5;
+
 	let isPanning = false;
 	let lastPosX = 0;
 	let lastPosY = 0;
@@ -208,10 +208,19 @@
 		});
 	}
 
+	const deviceList = document.getElementById('device-list');
+
 	function renderDevices(devices) {
-		const deviceList = document.getElementById('device-list');
-		let html = devices.map(device => `<li>${device}</li>`).join('');
+		let html = devices.map(device => `<li data-id="${device.id}">${device.userName}</li>`).join('');
 		deviceList.innerHTML = html;
+	}
+
+	function renderNewDevice(device) {
+		let li = document.createElement("li")
+		li.dataset.id = device.id;
+		li.innerText = device.userName;
+
+		deviceList.appendChild(li);
 	}
 
 	function makeItemForTransport(type, content, left, top) {
@@ -283,8 +292,25 @@
 		const scratchpad = $('#scratchpad');
 		const status = $('#status');
 		const addText = $("#addText")
-		const imgUpload = $("#imageUpload")
+		const imgUpload = $("#imageUpload");
 		const textInputDialog = $("#textInputDialog");
+		const authCode = $("#authCode");
+		const authUserDialog = $("#authUserDialog")
+
+		authCode.addEventListener('input', (e) => {
+			let value = e.target.value;
+			console.log(value, value.length);
+
+			if (value.length == 6) {
+				socket.emit('knockKnock', ({ id: socket.id, authCode: value }))
+
+				if (!authUserDialog.classList.contains('hidden')) {
+					authUserDialog.close();
+					authUserDialog.classList.add('hidden');
+				}
+				e.target.value = '';
+			}
+		})
 
 		addText.addEventListener('click', () => {
 			if (textInputDialog.classList.contains('hidden')) {
@@ -295,34 +321,51 @@
 			}
 		})
 
-		socket.on('updateDevices', (devices) => {
-			renderDevices(devices)
+		socket.on('newConnection', (result) => {
+			console.log(result);
+
+			if ('stage' in result && result.stage == 'auth_pending') {
+				authUserDialog.classList.remove('hidden');
+				authUserDialog.showModal();
+			}
+		});
+
+		socket.on('dingDing', (user) => {
+			renderNewDevice(user);
 		})
 
-		socket.on('updateScratchpad', (data) => {
-			// scratchpad.value = content;
-			if (!data) return;
+		socket.on('flushAll', (devices) => {
+			renderDevices(devices);
+		})
 
-			const rendered = (response) => {
-				if (!response) return;
-
-				let args = fromItemForTransport(response)
-				if (args.some(v => !!v == false) || args.length < 4) {
-					console.log("malformed data ", args);
-				}
-				createItem.apply(null, args);
-			}
-
-			if (data.length && data.splice) {
-				data.forEach(content => {
-					rendered(content)
-				})
-			} else {
-				rendered(data)
-			}
-
-			status.textContent = 'Content updated';
-		});
+		// socket.on('updateDevices', (devices) => {
+		// 	renderDevices(devices)
+		// })
+		//
+		// socket.on('updateScratchpad', (data) => {
+		// 	// scratchpad.value = content;
+		// 	if (!data) return;
+		//
+		// 	const rendered = (response) => {
+		// 		if (!response) return;
+		//
+		// 		let args = fromItemForTransport(response)
+		// 		if (args.some(v => !!v == false) || args.length < 4) {
+		// 			console.log("malformed data ", args);
+		// 		}
+		// 		createItem.apply(null, args);
+		// 	}
+		//
+		// 	if (data.length && data.splice) {
+		// 		data.forEach(content => {
+		// 			rendered(content)
+		// 		})
+		// 	} else {
+		// 		rendered(data)
+		// 	}
+		//
+		// 	status.textContent = 'Content updated';
+		// });
 
 		textInputDialog.addEventListener('close', () => {
 			if (textInputDialog.returnValue === 'confirm') {
@@ -336,6 +379,7 @@
 				}
 			}
 
+			textInputDialog.close();
 			textInputDialog.classList.add('hidden')
 			scratchpad.value = ''; // Clear the input
 		});
