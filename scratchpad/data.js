@@ -16,14 +16,13 @@ const ScratchPad = {
 		if (!content) throw Error('empty_content')
 		if (!content.type) throw Error('invalid_data')
 
-		if (!(ScratchTypes.include(content.type))) {
+		if (!(content.type in ScratchTypes)) {
 			throw Error('invalid_type')
 		}
 		return true;
 	},
 
 	create: function(id, data) {
-		this.__validatePresence(id);
 		this.__validateScratchType(data)
 
 		if (!store[id]) {

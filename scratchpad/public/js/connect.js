@@ -212,6 +212,7 @@
 
 	function renderDevices(devices) {
 		let html = devices.map(device => `<li data-id="${device.id}">${device.userName}</li>`).join('');
+		console.log(html, "html")
 		deviceList.innerHTML = html;
 	}
 
@@ -223,8 +224,8 @@
 		deviceList.appendChild(li);
 	}
 
-	function makeItemForTransport(id, type, content, left, top) {
-		return { id: id, content: { type, content, left, top } }
+	function makeItemForTransport(id, type, rest) {
+		return { id: id, type: type, rest: rest }
 	}
 
 	function fromItemForTransport(data) {
@@ -237,10 +238,23 @@
 	}
 
 	function createItem(type, content, left, top) {
-		let fabricObject;
 		console.log("creating item")
 
+		let fabricObject;
+		let obj = {};
+
 		if (type === 'text') {
+			obj = {
+				type: 'text',
+				content: content,
+				left: left,
+				top: top,
+				fontSize: 22,
+				fill: themes[currentTheme].fgColor,
+				fontFamily: 'Quicksand',
+				hasControls: false,
+			}
+
 			fabricObject = new fabric.IText(content, {
 				left: left,
 				top: top,
@@ -260,6 +274,13 @@
 				lastTop = top + fabricObject.height + itemSpacing;
 			}
 		} else if (type === 'image') {
+			obj = {
+				type: 'image',
+				content: content,
+				left: left,
+				top: top,
+			}
+
 			fabric.Image.fromURL(content, (img) => {
 				img.scale(0.5).set({
 					left: left,
@@ -286,6 +307,8 @@
 		canvas.add(fabricObject);
 		canvas.renderAll();
 		adjustCanvasSize(fabricObject)
+
+		return obj;
 	}
 
 	document.addEventListener('DOMContentLoaded', () => {
@@ -302,12 +325,12 @@
 			let value = e.target.value;
 
 			if (value.length == 6) {
-				socket.emit('knockKnock', ({ id: socket.id, authCode: value }))
+				socket.emit('knockKnock', ({ id: socket.id, authCode: value.toUpperCase() }))
 
 				// TODO: do this after user verified
 				if (!authUserDialog.classList.contains('hidden')) {
 					authUserDialog.close();
-					authUserDialog.classList.add('hidden');
+					setTimeout(() => authUserDialog.classList.add('hidden'), 500);
 				}
 
 				e.target.value = '';
@@ -319,45 +342,65 @@
 				textInputDialog.classList.remove('hidden')
 				textInputDialog.showModal();
 			} else {
-				textInputDialog.classList.add('hidden')
+				textInputDialog.close();
+				setTimeout(() => textInputDialog.classList.add('hidden'), 500);
 			}
 		})
 
 		socket.on('initiateShip', (result) => {
 			if (result.stage == 'init_auth') {
+				console.log('init_auth')
+
 				let userName = localStorage.getItem('userName') || '';
 				let authToken = localStorage.getItem('authToken') || '';
 
 				socket.emit('validateAuth', { id: result.id, userName, authToken })
+				return
 			}
 		});
 
 		socket.on('newConnection', (result) => {
 			// console.log(result);
+			console.log('new_connection', result.stage)
+
 			if ('stage' in result && result.stage == 'auth_pending') {
 				authUserDialog.classList.remove('hidden');
 				authUserDialog.showModal();
 			}
 		});
 
-		socket.on('dingDing', (user) => {
-			renderNewDevice(user);
+		socket.on('dingDing', (response) => {
+			console.log("ding ding");
+			response.data && renderNewDevice(response.data);
 		})
 
-		socket.on('flushAll', (devices) => {
-			renderDevices(devices);
+		socket.on('flushAll', (scratches) => {
+			console.log("flush all, contents", scratches);
+			scratches.forEach(scratch => {
+				let { id, type, content, left, top } = scratch;
+				createItem(type, content, left, top)
+			})
 		})
 
 		socket.on('comeIn', (response) => {
-			console.log(response.data)
+			console.log('coming', response.data)
+
 			localStorage.setItem('userName', response.data.userName);
 			localStorage.setItem('authToken', response.data.authToken)
 		})
 
-		// socket.on('updateDevices', (devices) => {
-		// 	renderDevices(devices)
-		// })
-		//
+		socket.on('updateDevices', (devices) => {
+			console.log('update device', devices);
+			renderDevices(devices)
+		})
+
+		socket.on('broadcastScratche', (scratches) => {
+			scratches.forEach(scratch => {
+				let { id, type, content, left, top } = scratch;
+				createItem(type, content, left, top)
+			})
+		});
+
 		// socket.on('updateScratchpad', (data) => {
 		// 	// scratchpad.value = content;
 		// 	if (!data) return;
@@ -388,11 +431,9 @@
 				const text = scratchpad.value.trim();
 				if (text) {
 					let args = ['text', text, lastLeft, lastTop];
-					createItem.apply(null, args);
+					let obj = createItem.apply(null, args);
 
-					console.log("socketid", socket.id);
-
-					socket.emit('updateScratchpad', makeItemForTransport.apply(null, [socket.id, ...args]));
+					socket.emit('updateScratchpad', ({ ...obj, id: socket.id }));
 					status.textContent = 'Text added';
 
 				}
@@ -402,17 +443,6 @@
 			textInputDialog.classList.add('hidden')
 			scratchpad.value = ''; // Clear the input
 		});
-
-		// scratchpad.addEventListener('blur', () => {
-		// 	status.textContent = 'Saving...';
-		// 	let args = ['text', scratchpad.value, lastLeft, lastTop]
-		// 	createItem.apply(null, args);
-		//
-		// 	socket.emit('updateScratchpad', makeItemForTransport.apply(null, args));
-		//
-		// 	status.textContent = 'All changes saved';
-		// 	scratchpad.value = '';
-		// });
 
 		// Fetch the initial list of devices
 		// Give it a second for the server to register

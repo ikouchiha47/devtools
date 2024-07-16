@@ -43,14 +43,10 @@ bonjour.find({ type: 'http' }, (service) => {
 	if (!peers.has(service.name)) {
 		peers.set(service.name, new Set());
 	}
-
 	// get the other devices form the api?
 	// io.emit('newDevice', service);
 });
 
-// setInterval(() => {
-// 	console.log(scratchpadContents);
-// }, 2000)
 
 // Two things:
 // First:
@@ -123,7 +119,7 @@ const FishtownHookers = {
 	handleIdentity: function(response, onComplete, onError) {
 		try {
 
-			console.log("handleIdentity");
+			console.log("handleIdentity", response, this.__socket.id, auth.debug());
 
 			let { authCode } = response;
 			let user = auth.verify(this.__socket.id, authCode);
@@ -149,12 +145,21 @@ const sendVerificationEvent = (sock, userData) => {
 	console.log("sendVerification");
 
 	let response = { data: removeObjAttribute(userData, 'authCode') }
+	let devices = [...auth.devices()]
 
-	// console.log(scractes.all(), response, userData, "stuff");
+	// probably call authorize here, to authorize new users
+
+	console.log("sendv", auth.debug())
+
+	if (devices.findIndex(dev => dev.id == response.data.id) < 0) {
+		devices.push(response.data)
+	}
 
 	sock.emit('comeIn', response);
-	sock.emit('flushAll', scractes.all());
+	sock.emit('updateDevices', devices);
 	sock.broadcast.emit('dingDing', response);
+
+	sock.emit('flushAll', scractes.all());
 }
 
 const sendError = (sock, error) => {
@@ -162,15 +167,10 @@ const sendError = (sock, error) => {
 }
 
 io.on('connection', (socket) => {
-	console.log('New client connected', socket.id);
+	console.log("new connection", socket.id)
 
 	const fo = Object.create(FishtownHookers)
-
 	const lifecycle = fo.init(socket);
-
-	//openPortal
-	// socket.emit('newConnection', lifecycle.checkAuthenticated());
-	// socket.emit('newConnection', lifecycle.openPortal());
 
 	socket.emit('initiateShip', lifecycle.initiateShip())
 	socket.on('validateAuth', lifecycle.validateAuth.bind(lifecycle))
@@ -182,26 +182,28 @@ io.on('connection', (socket) => {
 		lifecycle.handleIdentity(response, sendVerificationEvent, sendError)
 	});
 
-	// io.emit('updateDevices', Array.from(devices));
-
-	// console.log(scratchpadContents);
-	// socket.emit('updateScratchpad', scratchpadContents);
-
-	socket.on('updateScratchpad', ({ id, content }) => {
+	socket.on('updateScratchpad', (request) => {
 		try {
+			let id = request.id;
 			//TODO: validate id with socket.id
-			console.log("id matchers", id, socket.id);
+			// console.log("id matchers", id, request, socket.id, auth.devices());
 
 			let isAuthzed = auth.isAuthz(socket.id)
+			// console.log("isAuthz", isAuthzed)
 			if (!isAuthzed) return { error: 'unauthorized' }
 
-			scractes.create(id, content)
-			socket.broadcast.emit('broadcastScratches', { id, content });
+			console.log("creating");
+			scractes.create(id, request)
+
+			// console.log("id matchers2", id, socket.id, scractes.all(), auth.devices());
+			socket.broadcast.emit('broadcastScratche', [request]);
 
 		} catch (e) {
 			if (e.message == 'unauthorized') {
 				console.error("Failed to find id", e);
 				socket.emit('error', { error: 'unauthorized' })
+			} else {
+				console.error('update scratchpad error:', e)
 			}
 		}
 
@@ -218,8 +220,8 @@ io.on('connection', (socket) => {
 			auth.deregister(socket.id);
 			// devices.delete(socket.id);
 			// io.emit('updateDevices', Array.from(devices));
-			console.log('Client disconnected', socket.id);
-			socket.broadcast.emit('updateDevices', auth.devices);
+			console.log('Client disconnected', socket.id, "updating devices", auth.devices());
+			socket.broadcast.emit('updateDevices', auth.devices());
 		} catch (e) {
 			console.error("Error disconnecting", e)
 		}

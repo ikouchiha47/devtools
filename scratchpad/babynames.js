@@ -166,7 +166,7 @@ const getRandomElement = (array) => {
 	return array[Math.floor(Math.random() * array.length)];
 }
 
-module.exports = () => {
+module.exports = function getRandomName() {
 	const begin = getRandomElement(left);
 	const end = getRandomElement(right);
 	const name = `${begin}_${end}`;

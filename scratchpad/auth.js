@@ -32,10 +32,13 @@ const generateUniqueNames = () => {
 	while (i < MAX_TRY) {
 		let name = generateName();
 		if (!(store.__usedNames.has(name))) {
+			console.log("generated name", name)
 			return name;
 		}
 		i += 1;
 	}
+
+	console.log("generated name", name)
 
 	throw Error('max_users_capacity')
 }
@@ -61,7 +64,7 @@ const Auth = {
 	__codeLength: 6,
 	__validatePresence: (id) => {
 		if (!(id in store.users))
-			throw Error('unauthorized')
+			throw Error('notfound')
 	},
 
 	__validateDuplicate: (id) => {
@@ -75,7 +78,7 @@ const Auth = {
 	},
 
 	__validateAuthenticated: (id) => {
-		if (AuthorizedStates.includes(store.users[id].authzed))
+		if (!AuthorizedStates.includes(store.users[id].authzed))
 			throw Error('fucked_auth')
 	},
 
@@ -85,7 +88,7 @@ const Auth = {
 		store.users[id] = Object.assign(AuthToken, {
 			id: id,
 			authzed: null,
-			authCode: generateCode(this.__codeLength),
+			authCode: "DAV1D1", // generateCode(this.__codeLength)
 			userName: null,
 		});
 
@@ -101,16 +104,22 @@ const Auth = {
 
 		// We need mutexz here
 		let name = generateUniqueNames()
+		// console.log("before reset", store);
 
-		store.users[id].authzed = AuthorizedStates[0];
-		store.users[id].userName = name;
-		store.users[id].authToken = generateToken();
+		store.users[id] = {
+			...store.users[id],
+			authzed: AuthorizedStates[0],
+			userName: name,
+			authToken: generateToken(),
+			markDelete: false,
+		}
 
 		console.log("resetting");
 
 		store.__tokensIndex[name] = { token: store.users[id].authToken, id: id };
 		store.__usedNames.add(name);
 
+		// console.log("after reset", store);
 		return store.users[id]
 	},
 
@@ -123,9 +132,11 @@ const Auth = {
 			throw Error('fucked_auth')
 		}
 
-		if (res.token != token) {
+		if (!res.id || res.token != token) {
 			throw Error('unauthorized')
 		}
+
+		store.users[res.id] && (store.users[res.id].authzed = AuthorizedStates[1]);
 
 		return [true, store.__tokensIndex[name]];
 	},
@@ -134,7 +145,7 @@ const Auth = {
 		let user = store.users[oldId]
 		if (!user) throw Error('da_faq')
 
-		store.users[newId] = { ...store.users[oldId], markDelete: false }
+		store.users[newId] = { ...store.users[oldId], id: newId, markDelete: false }
 		// console.log(store.users, newId, oldId);
 
 		store.__tokensIndex[name].id = newId;
@@ -144,18 +155,22 @@ const Auth = {
 
 	isAuthz: function(id) {
 		this.__validatePresence(id);
-		this.__validateAuthorized(id)
+		// this.__validateAuthorized(id) // check this later
+		this.__validateAuthenticated(id)
+
+		console.log("validated", id);
 
 		return true;
 	},
 
 	deregister: function(id) {
 		// this.__validatePresence(id);
+		console.log("deregistering", store.users, id)
 		store.users[id].markDelete = true;
 	},
 
 	devices: function() {
-		return Object.values(store.users) || []
+		return (Object.values(store.users) || []).filter(v => !(v && v.markDelete))
 	},
 
 	find: function(id) {
