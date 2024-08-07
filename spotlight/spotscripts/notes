@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+#
+#
+run () {
+	if [[ -z "$@" ]]; then
+		return
+	fi
+
+	txt="$@"
+	if [[ "$txt" == "!!exit" ]]; then
+		return
+	fi
+
+	if [[ "$txt" == "!!clear" ]]; then
+		echo > ~/.local/notes.txt
+	elif [[ "$txt" == "!!history" ]]; then
+		cat ~/.local/notes.txt
+	else
+		echo "$txt" | tee -a ~/.local/notes.txt
+	fi
+}
+
+read query
+run "$query"

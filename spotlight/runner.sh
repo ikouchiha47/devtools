@@ -67,6 +67,13 @@ case "$input" in
         read -p "$> " expr
         echo "$expr" | run_app "findfiles" ~/Downloads/ ~/Desktop/
         ;;
+    notes)
+        clear
+        tail -n 10 ~/.local/notes.txt
+        read -p "$> " note
+        echo "$note" | run_app "notes"
+        read -r
+        ;;
     *)
         list_cmds
         ;;

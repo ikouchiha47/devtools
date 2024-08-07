@@ -2,7 +2,6 @@
 #
 # find files
 #
-
 run() {
     query="$1"
     shift

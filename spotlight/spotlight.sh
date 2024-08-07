@@ -4,6 +4,11 @@
 # sudo dnf install rxvt-unicode
 
 # Check if urxvtd is running, if not start it
+
+function log() {
+    echo "$@" | tee -a /tmp/spotlight.log
+}
+
 running=$(ps aux | grep urxvtd | grep -v grep)
 if [[ -z "$running" ]]; then
     urxvtd -q -o -f
