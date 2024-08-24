@@ -19,7 +19,7 @@ run() {
 }
 # echo "$dirs" | tee -a /tmp/log
 
-read query
+read -ep query
 if [[ ! -z "$query" ]]; then
     run "$query" "$@"
 fi

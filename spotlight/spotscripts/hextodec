@@ -8,5 +8,5 @@ run() {
     echo "$result"
 }
 
-read query
+read -ep query
 run "$query"

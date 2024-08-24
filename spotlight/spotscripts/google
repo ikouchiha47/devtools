@@ -5,7 +5,7 @@ run () {
 	query="$@"
 	firefox https://www.google.com/search?q="${query}" &
 }
-read query
+read -ep query
 echo "redirect to firefox.."
 
 run "$query"

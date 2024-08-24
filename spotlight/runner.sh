@@ -47,30 +47,30 @@ case "$input" in
         ;;
 
     google)
-        read -p "query: " query
+        read -ep "query: " query
         echo "$query" | run_app "google"
         read -r
         ;;
 
     calculate)
-        read -p "= " expr
+        read -ep "= " expr
         echo "$expr" | run_app "calculate"
         read -r
         ;;
 
     hextodec)
-        read -p "= " expr
+        read -ep "= " expr
         echo "$expr" | run_app "hextodec"
         read -r
         ;;
     findfiles)
-        read -p "$> " expr
+        read -ep "$> " expr
         echo "$expr" | run_app "findfiles" ~/Downloads/ ~/Desktop/
         ;;
     notes)
         clear
         tail -n 10 ~/.local/notes.txt
-        read -p "$> " note
+        read -ep "$> " note
         echo "$note" | run_app "notes"
         read -r
         ;;

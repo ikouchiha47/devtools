@@ -73,5 +73,6 @@ if [[ ! -z "$is_spotlight_on" ]]; then
     xdotool windowmove "$is_spotlight_on" $pos_x $pos_y
 else
     # If terminal is not open, launch it on the active monitor
-    urxvtc -name "$urxvt_id" -geometry 80x8+${pos_x}+${pos_y} -e sh -c "$d/run.sh $d"
+    # rxvt -tn xterm-256color -name "$urxvt_id" -geometry 80x8+${pos_x}+${pos_y} -e sh -c "$d/run.sh $d"
+    urxvtc -name "$urxvt_id" -geometry 79x8+${pos_x}+${pos_y} -e bash -c "$d/run.sh $d"
 fi

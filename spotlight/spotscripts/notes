@@ -20,5 +20,5 @@ run () {
 	fi
 }
 
-read query
+read -ep query
 run "$query"
